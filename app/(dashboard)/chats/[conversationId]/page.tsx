@@ -14,16 +14,11 @@ export default function ConversationPage() {
   const { conversationId } = useParams();
   const { user } = useAuth();
 
-  // No conversation prop is provided – we initialize with null.
-  const initialFriend = null;
-
-  // State for messages, text input, and loading.
+  // Local state for messages, input text, loading, and friend data.
   const [messages, setMessages] = useState<DocumentData[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
-
-  // State for friend data.
-  const [friendData, setFriendData] = useState<User | null>(initialFriend);
+  const [friendData, setFriendData] = useState<User | null>(null);
 
   // Derive friend details with fallbacks.
   const friendName =
@@ -40,7 +35,7 @@ export default function ConversationPage() {
     }
     if (!conversationId) return;
 
-    // Fetch the conversation with friend data.
+    // Fetch the conversation along with friend data.
     getConversationWithFriendData(conversationId, user.uid)
       .then((convo) => {
         console.log("Fetched conversation:", convo);
@@ -54,9 +49,9 @@ export default function ConversationPage() {
           console.warn("Friend data not found in conversation.");
         }
       })
-      .catch((err) => console.error("Error fetching conversation doc:", err));
+      .catch((err) => console.error("Error fetching conversation:", err));
 
-    // Subscribe to real-time messages.
+    // Subscribe to messages in real time.
     const unsubscribe = subscribeToMessages(conversationId, (msgs) => {
       setMessages(msgs);
       setLoading(false);
@@ -83,7 +78,6 @@ export default function ConversationPage() {
   }
 
   return (
-    // Outer container with dark mode variants:
     <div className="w-full mx-auto border border-gray-300 dark:border-gray-700 rounded-xl flex flex-col h-[95vh] bg-white dark:bg-black text-black dark:text-white overflow-hidden">
       
       {/* TOP BAR / HEADER */}
@@ -112,9 +106,7 @@ export default function ConversationPage() {
           return (
             <div
               key={msg.id}
-              className={`flex items-end ${
-                isCurrentUser ? "justify-end" : "justify-start"
-              }`}
+              className={`flex items-end ${isCurrentUser ? "justify-end" : "justify-start"}`}
             >
               {!isCurrentUser && (
                 <Image
