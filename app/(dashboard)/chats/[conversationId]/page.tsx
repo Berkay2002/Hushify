@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import { subscribeToMessages, sendMessage } from "@/lib/messenger";
@@ -12,7 +12,7 @@ import type { User } from "@/lib/interfaces";
 export default function ConversationPage() {
   const router = useRouter();
   const params = useParams();
-  // conversationId can be a string or string[], so we extract a string:
+  // Extract conversationId as a string:
   const conversationId = Array.isArray(params.conversationId)
     ? params.conversationId[0]
     : params.conversationId;
@@ -31,6 +31,11 @@ export default function ConversationPage() {
     "Unknown Friend";
   const photoURL = friendData?.photoURL || "/placeholder-user.jpg";
 
+  // Refs for the messages container and the textarea.
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Fetch conversation and subscribe to messages.
   useEffect(() => {
     if (!user) {
       router.push("/login");
@@ -38,7 +43,6 @@ export default function ConversationPage() {
     }
     if (!conversationId) return;
 
-    // Fetch the conversation with friend data using the extracted string.
     getConversationWithFriendData(conversationId, user.uid)
       .then((convo) => {
         console.log("Fetched conversation:", convo);
@@ -54,7 +58,6 @@ export default function ConversationPage() {
       })
       .catch((err) => console.error("Error fetching conversation doc:", err));
 
-    // Subscribe to real-time messages
     const unsubscribe = subscribeToMessages(conversationId, (msgs) => {
       setMessages(msgs);
       setLoading(false);
@@ -62,14 +65,41 @@ export default function ConversationPage() {
     return () => unsubscribe();
   }, [user, conversationId, router]);
 
+  // Auto-scroll to the bottom when messages update.
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Auto-resize the textarea when text changes.
+  useEffect(() => {
+    if (textareaRef.current) {
+      // Reset height to auto so that we can recalculate the scrollHeight correctly.
+      textareaRef.current.style.height = "auto";
+      // Set height to the scrollHeight, capped at 150px.
+      const newHeight = Math.min(textareaRef.current.scrollHeight, 150);
+      textareaRef.current.style.height = `${newHeight}px`;
+    }
+  }, [text]);
+
   async function handleSend() {
     if (!text.trim() || !user || !conversationId) return;
     try {
       await sendMessage(conversationId, user.uid, text);
-      setText("");
+      setText(""); // Clear the textarea after sending.
     } catch (err) {
       console.error("Error sending message:", err);
     }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      // Prevent newline insertion and send the message.
+      e.preventDefault();
+      handleSend();
+    }
+    // Shift+Enter will insert a newline naturally.
   }
 
   if (loading) {
@@ -93,17 +123,13 @@ export default function ConversationPage() {
           className="w-10 h-10 rounded-full object-cover"
         />
         <div className="flex flex-col">
-          <span className="font-semibold text-black dark:text-white">
-            {friendName}
-          </span>
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            Active recently
-          </span>
+          <span className="font-semibold text-black dark:text-white">{friendName}</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">Active recently</span>
         </div>
       </div>
 
       {/* CHAT MESSAGES */}
-      <div className="flex-1 min-h-0 p-4 space-y-3 overflow-y-auto">
+      <div ref={messagesContainerRef} className="flex-1 min-h-0 p-4 space-y-3 overflow-y-auto">
         {messages.map((msg) => {
           const isCurrentUser = msg.senderId === user?.uid;
           return (
@@ -135,19 +161,16 @@ export default function ConversationPage() {
       </div>
 
       {/* BOTTOM INPUT */}
-      <div className="flex-shrink-0 flex items-center gap-2 p-3 border-t border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
-        <input
-          className="flex-1 px-3 py-2 rounded-full text-black dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black"
+      <div className="flex-shrink-0 flex flex-col gap-2 p-3 border-t border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+        <textarea
+          ref={textareaRef}
+          className="w-full px-3 py-2 rounded-lg text-black dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black resize-none focus:outline-none"
           placeholder="Type a message..."
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onKeyDown={handleKeyDown}
+          style={{ minHeight: "40px", maxHeight: "150px" }}
         />
-        <button
-          onClick={handleSend}
-          className="bg-blue-500 rounded-full hover:bg-blue-600 text-white px-4 py-2"
-        >
-          Send
-        </button>
       </div>
     </div>
   );
