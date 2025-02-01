@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { searchUsers } from '@/lib/userSearch'; // We'll define this
 import { sendFriendRequest } from '@/lib/friendships';
 import { useAuth } from '@/lib/context/AuthContext';
-import { User } from '@/app/interfaces';
+import { User } from '@/lib/interfaces';
 
 
 export default function UserSearchPage() {
