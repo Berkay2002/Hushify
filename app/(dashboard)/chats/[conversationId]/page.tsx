@@ -7,30 +7,25 @@ import { subscribeToMessages, sendMessage } from "@/lib/messenger";
 import { getConversationWithFriendData } from "@/lib/chatHelpers";
 import { useAuth } from "@/lib/context/AuthContext";
 import type { DocumentData } from "firebase/firestore";
-import type { Conversation, User } from "@/lib/interfaces";
+import type { User } from "@/lib/interfaces";
 
-// Define a proper props type for the page:
-interface ConversationPageProps {
-  conversation: Conversation & { friend?: User };
-}
-
-export default function ConversationPage({ conversation }: ConversationPageProps) {
+export default function ConversationPage() {
   const router = useRouter();
   const { conversationId } = useParams();
   const { user } = useAuth();
 
-  // Use friend data from the prop (if provided)
-  const initialFriend = conversation?.friend || null;
+  // No conversation prop is provided – we initialize with null.
+  const initialFriend = null;
 
-  // State for messages, text input, and loading
+  // State for messages, text input, and loading.
   const [messages, setMessages] = useState<DocumentData[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // State for friend data
+  // State for friend data.
   const [friendData, setFriendData] = useState<User | null>(initialFriend);
 
-  // Derive friend details with fallbacks
+  // Derive friend details with fallbacks.
   const friendName =
     friendData?.username ||
     friendData?.displayName ||
@@ -45,7 +40,7 @@ export default function ConversationPage({ conversation }: ConversationPageProps
     }
     if (!conversationId) return;
 
-    // Fetch the conversation with friend data
+    // Fetch the conversation with friend data.
     getConversationWithFriendData(conversationId, user.uid)
       .then((convo) => {
         console.log("Fetched conversation:", convo);
@@ -61,7 +56,7 @@ export default function ConversationPage({ conversation }: ConversationPageProps
       })
       .catch((err) => console.error("Error fetching conversation doc:", err));
 
-    // Subscribe to real-time messages
+    // Subscribe to real-time messages.
     const unsubscribe = subscribeToMessages(conversationId, (msgs) => {
       setMessages(msgs);
       setLoading(false);
@@ -80,7 +75,11 @@ export default function ConversationPage({ conversation }: ConversationPageProps
   }
 
   if (loading) {
-    return <div className="p-4 text-black dark:text-white">Loading messages...</div>;
+    return (
+      <div className="p-4 text-black dark:text-white">
+        Loading messages...
+      </div>
+    );
   }
 
   return (
@@ -97,8 +96,12 @@ export default function ConversationPage({ conversation }: ConversationPageProps
           className="w-10 h-10 rounded-full object-cover"
         />
         <div className="flex flex-col">
-          <span className="font-semibold text-black dark:text-white">{friendName}</span>
-          <span className="text-sm text-gray-600 dark:text-gray-400">Active recently</span>
+          <span className="font-semibold text-black dark:text-white">
+            {friendName}
+          </span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            Active recently
+          </span>
         </div>
       </div>
 
@@ -109,7 +112,9 @@ export default function ConversationPage({ conversation }: ConversationPageProps
           return (
             <div
               key={msg.id}
-              className={`flex items-end ${isCurrentUser ? "justify-end" : "justify-start"}`}
+              className={`flex items-end ${
+                isCurrentUser ? "justify-end" : "justify-start"
+              }`}
             >
               {!isCurrentUser && (
                 <Image
