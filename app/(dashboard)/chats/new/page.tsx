@@ -63,9 +63,9 @@ export default function NewConversationPage() {
     (async () => {
       setLoading(true);
       try {
-        // 1) Get accepted friends
+        // Get accepted friends as an array of User objects.
         const myFriends = await getAcceptedFriends(user.uid);
-        setFriends(myFriends.filter(Boolean) as User[]);
+        setFriends(myFriends);
       } catch (err) {
         console.error("Error loading friends:", err);
       } finally {
