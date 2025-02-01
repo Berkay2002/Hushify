@@ -4,26 +4,28 @@ import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebaseConfig';
 import { collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/lib/context/AuthContext';
+import type { DocumentData } from 'firebase/firestore';
 
 export function Chat() {
   const { user } = useAuth();
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<DocumentData[]>([]);
   const [newMessage, setNewMessage] = useState('');
 
   useEffect(() => {
     const q = query(collection(db, 'messages'), orderBy('createdAt'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const messages = [];
+      // Explicitly define the type for our local messages array
+      const messagesArr: DocumentData[] = [];
       querySnapshot.forEach((doc) => {
-        messages.push({ ...doc.data(), id: doc.id });
+        messagesArr.push({ ...doc.data(), id: doc.id });
       });
-      setMessages(messages);
+      setMessages(messagesArr);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const handleSendMessage = async (e) => {
+  const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (newMessage.trim()) {
       await addDoc(collection(db, 'messages'), {
