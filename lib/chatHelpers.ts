@@ -1,7 +1,7 @@
 // /lib/chatHelpers.ts
 import { db } from '@/lib/firebaseConfig';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { Conversation, User } from '@/app/interfaces';
+import { Conversation, User } from '@/lib/interfaces';
 import { findUserByUid } from '@/lib/users';
 
 /**
