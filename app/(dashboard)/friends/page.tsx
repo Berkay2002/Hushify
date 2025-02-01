@@ -9,7 +9,7 @@ import {
   removeFriend
 } from "@/lib/friendships";
 import { useAuth } from "@/lib/context/AuthContext";
-import { User } from "@/lib/interfaces"; // FriendRequest is defined globally, but we won't use it here.
+import { User } from "@/lib/interfaces"; // Global User type
 import { findUserByEmailOrUsername } from "@/lib/users";
 import {
   Card,
@@ -22,9 +22,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 
-// Define a type that matches the shape returned by getPendingRequests.
+// Define a type for pending requests returned by getPendingRequests.
+// For our purposes, we expect each pending request to include at least a "user" property.
 type PendingRequest = {
-  user: User | null;
+  user?: User | null;
+  // Other fields from the friendship doc are available if needed.
 };
 
 export default function FriendsPage() {
@@ -46,14 +48,14 @@ export default function FriendsPage() {
     setLoading(true);
 
     // getAcceptedFriends returns an array of User objects.
-    // getPendingRequests returns an array of objects shaped like { user: User | null }.
+    // getPendingRequests returns an array of objects shaped like { ...docData, user: User }.
     const [myFriends, myPending] = await Promise.all([
       getAcceptedFriends(user.uid),
       getPendingRequests(user.uid)
     ]);
 
     setFriends(myFriends.filter(Boolean) as User[]);
-    setPendingRequests(myPending); // myPending is of type PendingRequest[]
+    setPendingRequests(myPending);
     setLoading(false);
   }, [user]);
 
@@ -95,7 +97,6 @@ export default function FriendsPage() {
       const foundUser = await findUserByEmailOrUsername(searchTerm.trim());
       setSearchResult(foundUser);
       if (!foundUser) {
-        // Not found.
         return;
       }
 
@@ -112,7 +113,6 @@ export default function FriendsPage() {
     }
   }
 
-  // If not signed in, show "Please Sign In".
   if (!user) {
     return (
       <div className="p-4">
@@ -155,7 +155,6 @@ export default function FriendsPage() {
           {friends.length > 0 ? (
             <ul className="space-y-2">
               {friends.map((friend) => {
-                // Fallback if friend.username is missing.
                 const friendName =
                   friend.username || friend.displayName || friend.email || friend.uid;
 
@@ -190,20 +189,12 @@ export default function FriendsPage() {
           {pendingRequests.length > 0 ? (
             <ul className="space-y-2">
               {pendingRequests.map((req, index) => {
-                // req.user might be null if the user doc wasn't found.
                 if (!req.user) return null;
-
                 const pendingName =
-                  req.user.username ||
-                  req.user.displayName ||
-                  req.user.email ||
-                  req.user.uid;
+                  req.user.username || req.user.displayName || req.user.email || req.user.uid;
 
                 return (
-                  <li
-                    key={req.user.uid || index}
-                    className="flex justify-between items-center"
-                  >
+                  <li key={req.user.uid || index} className="flex justify-between items-center">
                     <span>{pendingName}</span>
                     <div className="flex gap-2">
                       <Button size="sm" onClick={() => handleAcceptRequest(req.user!.uid)}>
@@ -248,7 +239,6 @@ export default function FriendsPage() {
               <Button onClick={handleSearchAndRequest}>Send</Button>
             </div>
 
-            {/* Show "not found" or "found" messages */}
             {searched && !searchResult && (
               <p className="text-sm text-red-500">
                 No user found with that email or username.

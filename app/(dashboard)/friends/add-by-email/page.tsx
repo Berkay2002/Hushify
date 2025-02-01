@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/context/AuthContext';
 import { getUserByEmail } from '@/lib/users';
 import { sendFriendRequest } from '@/lib/friendships';
 
-// Shadcn UI (or similar) components:
+// Shadcn UI components:
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -19,7 +19,7 @@ export default function AddByEmailPage() {
   const [foundUser, setFoundUser] = useState<User | null>(null);
   const [searched, setSearched] = useState(false);
 
-  // Search by email in the /users collection
+  // Search by email in the /users collection.
   async function handleSearch() {
     setSearched(true);
     if (!email.trim()) return;
@@ -32,7 +32,7 @@ export default function AddByEmailPage() {
     }
   }
 
-  // Send a friend request if a user was found
+  // Send a friend request if a user was found.
   async function handleAddFriend() {
     if (!user || !foundUser) return;
     try {
