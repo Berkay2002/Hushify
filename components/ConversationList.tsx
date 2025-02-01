@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/context/AuthContext";
 import { getConversationsWithFriendData } from "@/lib/chatHelpers";
-import { ConversationCard } from "@/components/ConversationCard";
+import { ConversationCard } from "@/components/ui/conversationCards";
 import type { Conversation, User } from "@/lib/interfaces";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
