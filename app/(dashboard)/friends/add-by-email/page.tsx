@@ -14,7 +14,7 @@ export default function AddByEmailPage() {
   const { user } = useAuth();
   const [email, setEmail] = useState('');
   
-  // You can remove or rename this local interface since your global interface might already exist.
+  // Local interface (if needed) – consider using a global type instead
   interface User {
     uid: string;
     displayName?: string;
@@ -67,7 +67,7 @@ export default function AddByEmailPage() {
         <CardHeader>
           <CardTitle>Add Friend by Email</CardTitle>
           <CardDescription>
-            Enter a user's email to find them and send a friend request.
+            Enter a user&apos;s email to find them and send a friend request.
           </CardDescription>
         </CardHeader>
         <CardContent>
