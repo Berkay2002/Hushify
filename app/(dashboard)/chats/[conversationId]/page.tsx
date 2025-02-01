@@ -7,7 +7,7 @@ import { subscribeToMessages, sendMessage } from "@/lib/messenger";
 import { getConversationWithFriendData } from "@/lib/chatHelpers";
 import { useAuth } from "@/lib/context/AuthContext";
 import type { DocumentData } from "firebase/firestore";
-import type { ConversationCardProps, User } from "@/app/interfaces";
+import type { ConversationCardProps, User } from "@/lib/interfaces";
 
 export default function ConversationPage({ conversation }: ConversationCardProps) {
   const router = useRouter();
