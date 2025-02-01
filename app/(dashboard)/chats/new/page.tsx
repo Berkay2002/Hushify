@@ -12,13 +12,12 @@ import {
   CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
 import { useAuth } from "@/lib/context/AuthContext";
 import { createConversation } from "@/lib/messenger";
 import { getAcceptedFriends } from "@/lib/friendships";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebaseConfig";
-import { Conversation, User } from "@/app/interfaces";
+import { Conversation, User } from "@/lib/interfaces";
 
 /**
  * Return any existing conversation (with exactly 2 participants)
