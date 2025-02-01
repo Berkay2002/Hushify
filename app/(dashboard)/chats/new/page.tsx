@@ -1,4 +1,3 @@
-// app/(dashboard)/chats/new/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -23,7 +22,10 @@ import { Conversation, User } from "@/lib/interfaces";
  * Return any existing conversation (with exactly 2 participants)
  * between userUid and friendUid. If none, returns null.
  */
-async function findOneOnOneConversation(userUid: string, friendUid: string): Promise<Conversation | null> {
+async function findOneOnOneConversation(
+  userUid: string,
+  friendUid: string
+): Promise<Conversation | null> {
   const convRef = collection(db, "conversations");
   // Query where "participants" array-contains userUid
   const q = query(convRef, where("participants", "array-contains", userUid));
@@ -37,19 +39,16 @@ async function findOneOnOneConversation(userUid: string, friendUid: string): Pro
       data.participants.length === 2 &&
       data.participants.includes(friendUid)
     ) {
+      // Remove any id from data (if it exists) and then add our own.
+      const { ...rest } = data;
       return {
+        ...rest,
         id: docSnap.id,
-        ...data
       };
     }
   }
   return null;
 }
-
-/**
- * Optionally, you can also unify both a "getMyOneOnOneConversations" function
- * and this approach. The key is to detect if (participants == [user, friend]) already.
- */
 
 export default function NewConversationPage() {
   const router = useRouter();
@@ -129,7 +128,9 @@ export default function NewConversationPage() {
             value={selectedFriend}
             onChange={(e) => setSelectedFriend(e.target.value)}
           >
-            <option value="" disabled>-- Select --</option>
+            <option value="" disabled>
+              -- Select --
+            </option>
             {friends.map((friend) => (
               <option key={friend.uid} value={friend.uid}>
                 {friend.username || friend.displayName || friend.email}
@@ -138,7 +139,10 @@ export default function NewConversationPage() {
           </select>
         </CardContent>
         <CardFooter>
-          <Button onClick={handleCreate} className="w-full bg-white text-black hover:bg-gray-200">
+          <Button
+            onClick={handleCreate}
+            className="w-full bg-white text-black hover:bg-gray-200"
+          >
             Create Conversation
           </Button>
         </CardFooter>
