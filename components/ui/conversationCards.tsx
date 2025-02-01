@@ -4,13 +4,13 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Conversation, User } from "@/lib/interfaces";
 
-// Define the props for the ConversationCard component.
+// Define props for the ConversationCard component.
 interface ConversationCardProps {
   conversation: Conversation & { friend?: User };
-  currentUserUid: string;
+  className?: string;
 }
 
-export function ConversationCard({ conversation }: ConversationCardProps) {
+export function ConversationCard({ conversation, className }: ConversationCardProps) {
   const friend = conversation.friend;
   const friendName =
     friend?.username || friend?.displayName || friend?.email || "Unknown Friend";
@@ -19,7 +19,7 @@ export function ConversationCard({ conversation }: ConversationCardProps) {
 
   return (
     <Link href={`/chats/${conversation.id}`}>
-      <div className="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
+      <div className={`flex items-center gap-3 p-2 rounded cursor-pointer ${className ?? ""}`}>
         <div className="w-12 h-12 relative">
           <Image
             src={photoURL}
@@ -29,7 +29,7 @@ export function ConversationCard({ conversation }: ConversationCardProps) {
           />
         </div>
         <div className="flex flex-col overflow-hidden">
-          <span className="text-base font-semibold leading-tight text-black dark:text-white">
+          <span className="text-base font-semibold leading-tight">
             {friendName}
           </span>
           <span className="text-sm text-gray-400 truncate">

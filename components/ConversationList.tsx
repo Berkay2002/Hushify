@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/context/AuthContext";
 import { getConversationsWithFriendData } from "@/lib/chatHelpers";
-import { ConversationCard } from "./ui/conversationCards";
-import { Conversation, User } from "@/lib/interfaces";
+import { ConversationCard } from "@/components/ConversationCard";
+import type { Conversation, User } from "@/lib/interfaces";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -40,7 +40,9 @@ export default function ConversationList() {
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-xl font-semibold">All Chats</h2>
         <Link href="/chats/new">
-          <Button className="rounded-full" variant="outline">New Chat</Button>
+          <Button className="rounded-full" variant="outline">
+            New Chat
+          </Button>
         </Link>
       </div>
 
