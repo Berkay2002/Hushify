@@ -1,12 +1,18 @@
 "use client";
 
-import { ConversationCardProps } from "@/app/interfaces";
 import Link from "next/link";
 import Image from "next/image";
+import type { Conversation, User } from "@/lib/interfaces";
+
+// Define a proper props type for the component:
+interface ConversationCardProps {
+  conversation: Conversation & { friend?: User };
+}
 
 export function ConversationCard({ conversation }: ConversationCardProps) {
   const friend = conversation.friend;
-  const friendName = friend?.username || friend?.displayName || friend?.email || "Unknown Friend";
+  const friendName =
+    friend?.username || friend?.displayName || friend?.email || "Unknown Friend";
   const photoURL = friend?.photoURL || "/placeholder-user.jpg";
   const lastMsg = conversation.lastMessage;
 
