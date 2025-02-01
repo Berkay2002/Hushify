@@ -10,12 +10,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-        outline:
-          'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-        secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+        outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline'
       },
@@ -33,11 +30,14 @@ const buttonVariants = cva(
   }
 );
 
+// Update ButtonProps so that formAction matches Next.js expectations.
+// Instead of React.FormEventHandler, we define it as string or a function
+// that takes a FormData and returns void or a Promise<void>.
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
-  formAction?: React.FormEventHandler<HTMLButtonElement>;
+  formAction?: string | ((formData: FormData) => void | Promise<void>);
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
