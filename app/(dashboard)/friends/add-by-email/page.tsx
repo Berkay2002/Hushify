@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '@/lib/context/AuthContext'; // your context storing current user
+import { useAuth } from '@/lib/context/AuthContext';
 import { getUserByEmail } from '@/lib/users';
 import { sendFriendRequest } from '@/lib/friendships';
 
@@ -10,17 +10,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
+// Import the global User type.
+import type { User } from '@/lib/interfaces';
+
 export default function AddByEmailPage() {
   const { user } = useAuth();
   const [email, setEmail] = useState('');
   
-  // Local interface (if needed) – consider using a global type instead
-  interface User {
-    uid: string;
-    displayName?: string;
-    email: string;
-  }
-
+  // Remove the local interface definition and use the global type.
   const [foundUser, setFoundUser] = useState<User | null>(null);
   const [searched, setSearched] = useState(false);
 
