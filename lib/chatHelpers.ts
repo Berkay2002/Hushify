@@ -1,45 +1,72 @@
+// /lib/chatHelpers.ts
 import { db } from '@/lib/firebaseConfig';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { Conversation, User } from '@/app/interfaces';
-import { findUserByUid } from '@/lib/users'; // or define a small helper here
+import { findUserByUid } from '@/lib/users';
 
 /**
- * Return all "one-on-one" conversations for currentUid,
- * plus the friend data (username, photoURL, etc.) attached
- * so we can display it easily in the UI.
+ * Return all one-on-one conversations for currentUid,
+ * with the friend data (username, photoURL, etc.) attached.
  */
 export async function getConversationsWithFriendData(currentUid: string): Promise<(Conversation & { friend?: User })[]> {
   const convRef = collection(db, 'conversations');
   const q = query(convRef, where('participants', 'array-contains', currentUid));
   const snap = await getDocs(q);
 
-  // Convert doc -> conversation
+  // Convert each document into a Conversation object
   const rawConversations: Conversation[] = snap.docs.map((docSnap) => ({
     id: docSnap.id,
     ...docSnap.data(),
   })) as Conversation[];
 
-  // We only want 1-on-1 convos for a single friend, so filter or assume .length === 2
+  // Filter for one-on-one conversations (assumes exactly 2 participants)
   const oneOnOne = rawConversations.filter(
     (c) => c.participants && c.participants.length === 2
   );
 
-  // For each conversation, figure out which participant is NOT the current user,
-  // then fetch that user's profile so we can display their name/photo.
   const result: (Conversation & { friend?: User })[] = [];
 
+  // For each conversation, determine which participant is the friend and fetch their data
   for (const convo of oneOnOne) {
     const friendUid = convo.participants!.find((p) => p !== currentUid);
     if (!friendUid) {
-      // Means participants array didn't have a second user, skip
       result.push(convo);
       continue;
     }
-
     const friend = await findUserByUid(friendUid);
-    // Attach friend as a new property
     result.push({ ...convo, friend });
   }
 
   return result;
+}
+
+/**
+ * Fetch a single conversation (by conversationId) and augment it with friend data.
+ * It assumes the conversation is a one-on-one conversation.
+ */
+export async function getConversationWithFriendData(
+  conversationId: string,
+  currentUserUid: string
+): Promise<(Conversation & { friend?: User }) | null> {
+  const conversationRef = doc(db, 'conversations', conversationId);
+  const snap = await getDoc(conversationRef);
+  if (!snap.exists()) {
+    return null;
+  }
+  const conversationData = snap.data() as Conversation;
+
+  // If the conversation isn’t one-on-one, just return it.
+  if (!conversationData.participants || conversationData.participants.length !== 2) {
+    return conversationData;
+  }
+
+  // Determine which UID is the friend (not the current user)
+  const friendUid = conversationData.participants.find((uid) => uid !== currentUserUid);
+  if (!friendUid) {
+    return conversationData;
+  }
+
+  // Fetch the friend's details
+  const friend = await findUserByUid(friendUid);
+  return { ...conversationData, friend };
 }

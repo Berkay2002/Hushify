@@ -1,8 +1,9 @@
+// tailwind.config.ts
 import type { Config } from 'tailwindcss';
 import tailwindcssAnimate from 'tailwindcss-animate';
 
 const config: Config = {
-  darkMode: ['class'],
+  darkMode: ['class'], // enables dark mode via a class on <html>
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',

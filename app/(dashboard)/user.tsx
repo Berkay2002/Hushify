@@ -1,4 +1,3 @@
-// app/(dashboard)/user.tsx
 'use client';
 
 import { useAuth } from '@/lib/context/AuthContext';
@@ -47,7 +46,7 @@ export function User() {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" side="right" className="opacity-90">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem>Settings</DropdownMenuItem>
