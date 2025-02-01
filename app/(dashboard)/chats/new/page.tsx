@@ -88,7 +88,7 @@ export default function NewConversationPage() {
 
       // 2) If no existing convo, create a new one
       const conversationId = await createConversation([user.uid, selectedFriend]);
-      router.push(`/chat/${conversationId}`);
+      router.push(`/chats/${conversationId}`);
     } catch (err) {
       console.error("Error creating conversation:", err);
     }

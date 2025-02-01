@@ -36,8 +36,8 @@ export default function ConversationList() {
   }
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex justify-between items-center mb-2">
+    <div className="p-4 space-y-4  h-[95vh] overflow-hidden"> 
+      <div className="flex justify-between items-center mb-2 ">
         <h2 className="text-xl font-semibold">All Chats</h2>
         <Link href="/chats/new">
           <Button className="rounded-full" variant="outline">
