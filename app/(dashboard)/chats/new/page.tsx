@@ -82,7 +82,7 @@ export default function NewConversationPage() {
       if (existing) {
         // If found, redirect user to that conversation
         alert("You already have a conversation with this friend. Redirecting...");
-        router.push(`/chat/${existing.id}`);
+        router.push(`/chats/${existing.id}`);
         return;
       }
 
