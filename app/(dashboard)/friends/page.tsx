@@ -9,7 +9,7 @@ import {
   removeFriend
 } from '@/lib/friendships';
 import { useAuth } from '@/lib/context/AuthContext';
-import { FriendRequest, User } from '@/app/interfaces';
+import { FriendRequest, User } from '@/lib/interfaces';
 import { findUserByEmailOrUsername } from '@/lib/users';
 import {
   Card,
