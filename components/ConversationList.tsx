@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/context/AuthContext";
 import { getConversationsWithFriendData } from "@/lib/chatHelpers";
 import { ConversationCard } from "./ui/conversationCards";
-import { Conversation, User } from "@/app/interfaces";
+import { Conversation, User } from "@/lib/interfaces";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
