@@ -1,33 +1,38 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from "react";
 import {
   getAcceptedFriends,
   getPendingRequests,
   sendFriendRequest,
   acceptFriendRequest,
   removeFriend
-} from '@/lib/friendships';
-import { useAuth } from '@/lib/context/AuthContext';
-import { FriendRequest, User } from '@/lib/interfaces';
-import { findUserByEmailOrUsername } from '@/lib/users';
+} from "@/lib/friendships";
+import { useAuth } from "@/lib/context/AuthContext";
+import { User } from "@/lib/interfaces"; // FriendRequest is defined globally, but we won't use it here.
+import { findUserByEmailOrUsername } from "@/lib/users";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import Link from 'next/link';
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import Link from "next/link";
+
+// Define a type that matches the shape returned by getPendingRequests.
+type PendingRequest = {
+  user: User | null;
+};
 
 export default function FriendsPage() {
   const { user } = useAuth();
 
   // States for accepted friends, pending requests, etc.
   const [friends, setFriends] = useState<User[]>([]);
-  const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
   // States for searching a new friend
@@ -35,20 +40,20 @@ export default function FriendsPage() {
   const [searched, setSearched] = useState(false);
   const [searchResult, setSearchResult] = useState<User | null>(null);
 
-  // Load current user's accepted friends + pending requests
+  // Load current user's accepted friends and pending requests.
   const loadData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
 
-    // getAcceptedFriends returns an array of user objects
-    // getPendingRequests returns an array of { ...data, user }
+    // getAcceptedFriends returns an array of User objects.
+    // getPendingRequests returns an array of objects shaped like { user: User | null }.
     const [myFriends, myPending] = await Promise.all([
       getAcceptedFriends(user.uid),
-      getPendingRequests(user.uid),
+      getPendingRequests(user.uid)
     ]);
 
     setFriends(myFriends.filter(Boolean) as User[]);
-    setPendingRequests(myPending);
+    setPendingRequests(myPending); // myPending is of type PendingRequest[]
     setLoading(false);
   }, [user]);
 
@@ -58,39 +63,39 @@ export default function FriendsPage() {
     }
   }, [user, loadData]);
 
-  // Accept a pending request
+  // Accept a pending request.
   async function handleAcceptRequest(otherUid: string) {
     if (!user) return;
     try {
       await acceptFriendRequest(user.uid, otherUid);
       await loadData();
     } catch (err) {
-      console.error('Error accepting friend request:', err);
+      console.error("Error accepting friend request:", err);
     }
   }
 
-  // Remove (or reject) a friend
+  // Remove (or reject) a friend.
   async function handleRemoveFriend(otherUid: string) {
     if (!user) return;
     try {
       await removeFriend(user.uid, otherUid);
       await loadData();
     } catch (err) {
-      console.error('Error removing friend:', err);
+      console.error("Error removing friend:", err);
     }
   }
 
-  // Search by email/username -> send friend request
+  // Search by email/username and send a friend request.
   async function handleSearchAndRequest() {
     if (!user || !searchTerm.trim()) return;
     setSearched(true);
 
     try {
-      // find a user doc by email or username
+      // Find a user document by email or username.
       const foundUser = await findUserByEmailOrUsername(searchTerm.trim());
       setSearchResult(foundUser);
       if (!foundUser) {
-        // Not found
+        // Not found.
         return;
       }
 
@@ -100,14 +105,14 @@ export default function FriendsPage() {
           foundUser.displayName || foundUser.username || foundUser.email
         }!`
       );
-      setSearchTerm('');
+      setSearchTerm("");
       await loadData();
     } catch (err) {
-      console.error('Error searching or sending friend request:', err);
+      console.error("Error searching or sending friend request:", err);
     }
   }
 
-  // If not signed in, show "Please Sign In"
+  // If not signed in, show "Please Sign In".
   if (!user) {
     return (
       <div className="p-4">
@@ -115,7 +120,7 @@ export default function FriendsPage() {
           <CardHeader>
             <CardTitle>Please Sign In</CardTitle>
             <CardDescription>
-              You need to be signed in to manage friends.{' '}
+              You need to be signed in to manage friends.{" "}
               <Link href="/login" className="text-blue-500">
                 Go to Login
               </Link>
@@ -143,25 +148,19 @@ export default function FriendsPage() {
         <CardHeader>
           <CardTitle>Friends</CardTitle>
           <CardDescription>
-            These are your currently accepted friends
+            These are your currently accepted friends.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {friends.length > 0 ? (
             <ul className="space-y-2">
               {friends.map((friend) => {
-                // Fallback if friend.username is missing
+                // Fallback if friend.username is missing.
                 const friendName =
-                  friend.username ||
-                  friend.displayName ||
-                  friend.email ||
-                  friend.uid;
+                  friend.username || friend.displayName || friend.email || friend.uid;
 
                 return (
-                  <li
-                    key={friend.uid}
-                    className="flex items-center justify-between"
-                  >
+                  <li key={friend.uid} className="flex items-center justify-between">
                     <span>{friendName}</span>
                     <Button
                       variant="destructive"
@@ -190,8 +189,8 @@ export default function FriendsPage() {
         <CardContent>
           {pendingRequests.length > 0 ? (
             <ul className="space-y-2">
-              {pendingRequests.map((req) => {
-                // req.user might be null if the user doc wasn't found
+              {pendingRequests.map((req, index) => {
+                // req.user might be null if the user doc wasn't found.
                 if (!req.user) return null;
 
                 const pendingName =
@@ -202,21 +201,18 @@ export default function FriendsPage() {
 
                 return (
                   <li
-                    key={`${req.user1}_${req.user2}`}
+                    key={req.user.uid || index}
                     className="flex justify-between items-center"
                   >
                     <span>{pendingName}</span>
                     <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleAcceptRequest(req.user.uid)}
-                      >
+                      <Button size="sm" onClick={() => handleAcceptRequest(req.user!.uid)}>
                         Accept
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => handleRemoveFriend(req.user.uid)}
+                        onClick={() => handleRemoveFriend(req.user!.uid)}
                       >
                         Reject
                       </Button>
@@ -238,7 +234,7 @@ export default function FriendsPage() {
         <CardHeader>
           <CardTitle>Add a New Friend</CardTitle>
           <CardDescription>
-            Send a friend request by entering another user’s email or username
+            Send a friend request by entering another user’s email or username.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -260,7 +256,7 @@ export default function FriendsPage() {
             )}
             {searchResult && (
               <p className="text-sm text-green-500">
-                Found user:{' '}
+                Found user:{" "}
                 {searchResult.displayName ||
                   searchResult.username ||
                   searchResult.email}
