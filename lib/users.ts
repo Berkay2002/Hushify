@@ -1,5 +1,20 @@
+// /lib/users.ts
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from './firebaseConfig';
+
+/**
+ * Find a user by exact email.
+ */
+export async function getUserByEmail(email: string) {
+  const usersRef = collection(db, 'users');
+  const emailQ = query(usersRef, where('email', '==', email));
+  const emailSnap = await getDocs(emailQ);
+  if (!emailSnap.empty) {
+    const docSnap = emailSnap.docs[0];
+    return { uid: docSnap.id, ...docSnap.data() };
+  }
+  return null;
+}
 
 /**
  * Find a user by exact email or username (whichever field is provided).
@@ -17,13 +32,13 @@ export async function findUserByEmailOrUsername(term: string) {
   ]);
 
   if (!emailSnap.empty) {
-    const doc = emailSnap.docs[0];
-    return { uid: doc.id, ...doc.data() };
+    const docSnap = emailSnap.docs[0];
+    return { uid: docSnap.id, ...docSnap.data() };
   }
 
   if (!usernameSnap.empty) {
-    const doc = usernameSnap.docs[0];
-    return { uid: doc.id, ...doc.data() };
+    const docSnap = usernameSnap.docs[0];
+    return { uid: docSnap.id, ...docSnap.data() };
   }
 
   return null;
