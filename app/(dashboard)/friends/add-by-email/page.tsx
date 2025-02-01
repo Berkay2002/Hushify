@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/context/AuthContext';
 import { getUserByEmail } from '@/lib/users';
 import { sendFriendRequest } from '@/lib/friendships';
 
-// Shadcn UI or similar:
+// Shadcn UI (or similar) components:
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -16,12 +16,10 @@ import type { User } from '@/lib/interfaces';
 export default function AddByEmailPage() {
   const { user } = useAuth();
   const [email, setEmail] = useState('');
-  
-  // Remove the local interface definition and use the global type.
   const [foundUser, setFoundUser] = useState<User | null>(null);
   const [searched, setSearched] = useState(false);
 
-  // Search by email in /users collection
+  // Search by email in the /users collection
   async function handleSearch() {
     setSearched(true);
     if (!email.trim()) return;
@@ -34,7 +32,7 @@ export default function AddByEmailPage() {
     }
   }
 
-  // Send friend request if we found a user
+  // Send a friend request if a user was found
   async function handleAddFriend() {
     if (!user || !foundUser) return;
     try {
