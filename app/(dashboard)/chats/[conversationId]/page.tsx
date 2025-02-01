@@ -11,16 +11,19 @@ import type { User } from "@/lib/interfaces";
 
 export default function ConversationPage() {
   const router = useRouter();
-  const { conversationId } = useParams();
+  const params = useParams();
+  // conversationId can be a string or string[], so we extract a string:
+  const conversationId = Array.isArray(params.conversationId)
+    ? params.conversationId[0]
+    : params.conversationId;
+    
   const { user } = useAuth();
 
-  // Local state for messages, input text, loading, and friend data.
   const [messages, setMessages] = useState<DocumentData[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [friendData, setFriendData] = useState<User | null>(null);
 
-  // Derive friend details with fallbacks.
   const friendName =
     friendData?.username ||
     friendData?.displayName ||
@@ -35,7 +38,7 @@ export default function ConversationPage() {
     }
     if (!conversationId) return;
 
-    // Fetch the conversation along with friend data.
+    // Fetch the conversation with friend data using the extracted string.
     getConversationWithFriendData(conversationId, user.uid)
       .then((convo) => {
         console.log("Fetched conversation:", convo);
@@ -49,9 +52,9 @@ export default function ConversationPage() {
           console.warn("Friend data not found in conversation.");
         }
       })
-      .catch((err) => console.error("Error fetching conversation:", err));
+      .catch((err) => console.error("Error fetching conversation doc:", err));
 
-    // Subscribe to messages in real time.
+    // Subscribe to real-time messages
     const unsubscribe = subscribeToMessages(conversationId, (msgs) => {
       setMessages(msgs);
       setLoading(false);
@@ -60,9 +63,9 @@ export default function ConversationPage() {
   }, [user, conversationId, router]);
 
   async function handleSend() {
-    if (!text.trim() || !user) return;
+    if (!text.trim() || !user || !conversationId) return;
     try {
-      await sendMessage(conversationId as string, user.uid, text);
+      await sendMessage(conversationId, user.uid, text);
       setText("");
     } catch (err) {
       console.error("Error sending message:", err);
