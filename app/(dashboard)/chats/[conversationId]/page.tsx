@@ -179,7 +179,7 @@ export default function ConversationPage() {
       </div>
 
       {/* CHAT MESSAGES */}
-      <div ref={messagesContainerRef} className="flex-1 min-h-0 p-4 space-y-3 overflow-y-auto dark:bg-[#313338]">
+      <div ref={messagesContainerRef} className="flex-1 min-h-0 p-4 space-y-3 overflow-y-auto dark:bg-[#313338] scrollbar-hide">
         {messages.map((msg) => {
           const isCurrentUser = msg.senderId === user?.uid;
           return (

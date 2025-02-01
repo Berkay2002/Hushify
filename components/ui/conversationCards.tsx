@@ -33,7 +33,7 @@ export function ConversationCard({ conversation, className }: ConversationCardPr
             {friendName}
           </span>
           <span className="text-sm text-gray-400 truncate">
-            {lastMsg ? `Last: ${lastMsg.text} by ${lastMsg.senderId}` : "No messages yet"}
+            {lastMsg ? `${lastMsg.text}` : "No messages yet"}
           </span>
         </div>
       </div>
