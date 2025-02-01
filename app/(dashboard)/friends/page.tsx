@@ -55,7 +55,7 @@ export default function FriendsPage() {
     ]);
 
     setFriends(myFriends.filter(Boolean) as User[]);
-    setPendingRequests(myPending);
+    setPendingRequests(myPending.filter(Boolean) as PendingRequest[]);
     setLoading(false);
   }, [user]);
 
