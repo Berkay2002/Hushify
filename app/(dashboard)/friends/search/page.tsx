@@ -1,17 +1,15 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { searchUsers } from '@/lib/userSearch'; // We'll define this
-import { sendFriendRequest } from '@/lib/friendships';
-import { useAuth } from '@/lib/context/AuthContext';
-import { User } from '@/lib/interfaces';
-
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { searchUsers } from "@/lib/userSearch";
+import { sendFriendRequest } from "@/lib/friendships";
+import { useAuth } from "@/lib/context/AuthContext";
+import type { User } from "@/lib/interfaces";
 
 export default function UserSearchPage() {
-  const [term, setTerm] = useState('');
-
+  const [term, setTerm] = useState("");
   const [results, setResults] = useState<User[]>([]);
   const { user } = useAuth();
 
@@ -20,7 +18,7 @@ export default function UserSearchPage() {
       const found = await searchUsers(term);
       setResults(found);
     } catch (err) {
-      console.error('Error searching:', err);
+      console.error("Error searching:", err);
     }
   }
 
@@ -28,9 +26,9 @@ export default function UserSearchPage() {
     if (!user) return;
     try {
       await sendFriendRequest(user.uid, otherUid);
-      alert('Friend request sent!');
+      alert("Friend request sent!");
     } catch (err) {
-      console.error('Error sending friend request:', err);
+      console.error("Error sending friend request:", err);
     }
   }
 
@@ -49,7 +47,7 @@ export default function UserSearchPage() {
         {results.map((u) => (
           <li key={u.uid} className="flex items-center justify-between">
             <div>
-              <p className="font-medium">{u.displayName || u.username}</p>
+              <p className="font-medium">{u.displayName || u.username || u.email}</p>
               <p className="text-sm text-muted-foreground">UID: {u.uid}</p>
             </div>
             <Button variant="outline" size="sm" onClick={() => handleAddFriend(u.uid)}>
