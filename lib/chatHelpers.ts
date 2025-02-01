@@ -1,14 +1,16 @@
 // /lib/chatHelpers.ts
 import { db } from '@/lib/firebaseConfig';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { Conversation, User } from '@/lib/interfaces';
+import type { Conversation, User } from '@/lib/interfaces';
 import { findUserByUid } from '@/lib/users';
 
 /**
  * Return all one-on-one conversations for currentUid,
  * with the friend data (username, photoURL, etc.) attached.
  */
-export async function getConversationsWithFriendData(currentUid: string): Promise<(Conversation & { friend?: User })[]> {
+export async function getConversationsWithFriendData(
+  currentUid: string
+): Promise<(Conversation & { friend?: User })[]> {
   const convRef = collection(db, 'conversations');
   const q = query(convRef, where('participants', 'array-contains', currentUid));
   const snap = await getDocs(q);
@@ -33,7 +35,8 @@ export async function getConversationsWithFriendData(currentUid: string): Promis
       result.push(convo);
       continue;
     }
-    const friend = await findUserByUid(friendUid);
+    // If findUserByUid returns null, convert it to undefined.
+    const friend = await findUserByUid(friendUid) ?? undefined;
     result.push({ ...convo, friend });
   }
 
@@ -66,7 +69,7 @@ export async function getConversationWithFriendData(
     return conversationData;
   }
 
-  // Fetch the friend's details
-  const friend = await findUserByUid(friendUid);
+  // Fetch the friend's details and convert null to undefined if necessary.
+  const friend = await findUserByUid(friendUid) ?? undefined;
   return { ...conversationData, friend };
 }
