@@ -3,8 +3,8 @@ import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from '@/lib/context/AuthContext';
 
 export const metadata = {
-  title: 'Next.js Firebase Auth Demo',
-  description: '...'
+  title: 'Hushify',
+  description: 'Secure Real-time Chat App',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
