@@ -30,7 +30,7 @@ function base64ToBuffer(base64: string): ArrayBuffer {
 const MASTER_SECRET = "your-secure-master-key"; // Store this securely
 
 // 🔹 **Generate Encryption Key using HKDF (Optimized for Speed)**
-async function getEncryptionKey(): Promise<CryptoKey> {
+export async function getEncryptionKey(): Promise<CryptoKey> {
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
@@ -55,7 +55,7 @@ async function getEncryptionKey(): Promise<CryptoKey> {
 }
 
 // 🔹 **Encrypt Message Using AES-256-GCM**
-async function encryptMessage(plainText: string, key: CryptoKey): Promise<{ cipherText: string; iv: string }> {
+export async function encryptMessage(plainText: string, key: CryptoKey): Promise<{ cipherText: string; iv: string }> {
   const encoder = new TextEncoder();
   const iv = crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV for security
   const encryptedBuffer = await crypto.subtle.encrypt(
@@ -70,7 +70,7 @@ async function encryptMessage(plainText: string, key: CryptoKey): Promise<{ ciph
 }
 
 // 🔹 **Decrypt Message Using AES-256-GCM**
-async function decryptMessage(cipherText: string, ivBase64: string, key: CryptoKey): Promise<string> {
+export async function decryptMessage(cipherText: string, ivBase64: string, key: CryptoKey): Promise<string> {
   try {
     const decoder = new TextDecoder();
     const iv = new Uint8Array(base64ToBuffer(ivBase64));

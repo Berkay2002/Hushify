@@ -1,8 +1,11 @@
+// components/ui/conversationCards.tsx
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Conversation, User } from "@/lib/interfaces";
+import { getEncryptionKey, decryptMessage } from "@/lib/messenger"; // Import your decryption helpers
 
 // Define props for the ConversationCard component.
 interface ConversationCardProps {
@@ -15,7 +18,31 @@ export function ConversationCard({ conversation, className }: ConversationCardPr
   const friendName =
     friend?.username || friend?.displayName || friend?.email || "Unknown Friend";
   const photoURL = friend?.photoURL || "/placeholder-user.jpg";
-  const lastMsg = conversation.lastMessage;
+
+  // State for the decrypted last message. Start with a placeholder.
+  const [decryptedLastMsg, setDecryptedLastMsg] = useState<string>("Decrypting...");
+
+  useEffect(() => {
+    async function decryptLastMessage() {
+      if (conversation.lastMessage && conversation.lastMessage.text && conversation.lastMessage.iv) {
+        try {
+          const key = await getEncryptionKey();
+          const decrypted = await decryptMessage(
+            conversation.lastMessage.text,
+            conversation.lastMessage.iv,
+            key
+          );
+          setDecryptedLastMsg(decrypted);
+        } catch (error) {
+          console.error("Failed to decrypt last message:", error);
+          setDecryptedLastMsg("**[Message cannot be decrypted]**");
+        }
+      } else {
+        setDecryptedLastMsg("No messages yet");
+      }
+    }
+    decryptLastMessage();
+  }, [conversation.lastMessage]);
 
   return (
     <Link href={`/chats/${conversation.id}`}>
@@ -33,7 +60,7 @@ export function ConversationCard({ conversation, className }: ConversationCardPr
             {friendName}
           </span>
           <span className="text-sm text-gray-400 truncate">
-            {lastMsg ? `${lastMsg.text}` : "No messages yet"}
+            {decryptedLastMsg}
           </span>
         </div>
       </div>

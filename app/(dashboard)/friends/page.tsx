@@ -65,6 +65,8 @@ export default function FriendsPage() {
     }
   }, [user, loadData]);
 
+  
+
   // Accept a pending request.
   async function handleAcceptRequest(otherUid: string) {
     if (!user) return;

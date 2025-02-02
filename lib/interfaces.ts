@@ -17,7 +17,8 @@ export interface User {
   displayName?: string;
   email: string;
   username?: string;
-  photoURL?: string; // Added: optional property for profile picture URL
+  photoURL?: string; // optional property for profile picture URL
+  status?: "online" | "offline"; // added online/offline status
 }
 
 export interface Conversation {
@@ -37,6 +38,7 @@ export interface Conversation {
      * Timestamp or Date for when the last message was sent.
      */
     createdAt?: Date;
+    iv?: string; // Add this line
   };
 }
 
