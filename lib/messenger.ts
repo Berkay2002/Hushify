@@ -1,5 +1,3 @@
-// lib/messenger.ts
-
 import {
   collection,
   doc,
@@ -131,13 +129,15 @@ export async function sendMessage(conversationId: string, senderId: string, text
 /**
  * Subscribe to messages in real-time.
  * Decrypts messages before passing them to the callback.
+ * Uses a cached encryption key to avoid re-deriving it on every snapshot update.
  */
 export function subscribeToMessages(conversationId: string, callback: (messages: DocumentData[]) => void) {
   const messagesRef = collection(db, "conversations", conversationId, "messages");
   const q = query(messagesRef, orderBy("createdAt", "asc"));
+  const keyPromise = getEncryptionKey(); // derive once and reuse
 
   const unsubscribe = onSnapshot(q, async (snapshot) => {
-    const key = await getEncryptionKey();
+    const key = await keyPromise;
     const messages = await Promise.all(
       snapshot.docs.map(async (doc) => {
         const data = doc.data();

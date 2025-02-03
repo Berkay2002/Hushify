@@ -1,4 +1,3 @@
-// /lib/friendships.ts
 import { db } from './firebaseConfig';
 import {
   doc,
@@ -24,6 +23,7 @@ function sortUIDs(uidA: string, uidB: string): [string, string] {
 
 /**
  * Send a friend request to another user.
+ * Added a "participants" field to enable a single query for friend lists.
  */
 export async function sendFriendRequest(currentUid: string, otherUid: string) {
   const [user1, user2] = sortUIDs(currentUid, otherUid);
@@ -35,6 +35,7 @@ export async function sendFriendRequest(currentUid: string, otherUid: string) {
     {
       user1,
       user2,
+      participants: [user1, user2],
       status: 'pending',
       requestedBy: currentUid,
       createdAt: serverTimestamp(),
@@ -75,62 +76,49 @@ export async function removeFriend(currentUid: string, otherUid: string) {
 /**
  * Query all current "accepted" friends of currentUid.
  * Returns an array of User objects.
+ * Optimized query by using the "participants" array field.
  */
 export async function getAcceptedFriends(currentUid: string): Promise<User[]> {
   const friendsRef = collection(db, 'friendships');
-
-  const q1 = query(friendsRef, where('user1', '==', currentUid), where('status', '==', 'accepted'));
-  const snap1 = await getDocs(q1);
-
-  const q2 = query(friendsRef, where('user2', '==', currentUid), where('status', '==', 'accepted'));
-  const snap2 = await getDocs(q2);
+  const q = query(
+    friendsRef,
+    where('participants', 'array-contains', currentUid),
+    where('status', '==', 'accepted')
+  );
+  const snap = await getDocs(q);
 
   const friendUIDs: string[] = [];
-  snap1.forEach((doc) => {
+  snap.forEach((doc) => {
     const data = doc.data();
-    friendUIDs.push(data.user2);
-  });
-  snap2.forEach((doc) => {
-    const data = doc.data();
-    friendUIDs.push(data.user1);
+    // Identify the friend uid (the one that is not the current user)
+    const friendUid = data.participants.find((uid: string) => uid !== currentUid);
+    if (friendUid) friendUIDs.push(friendUid);
   });
 
-  // Retrieve user objects for all friendUIDs.
   const friends = await Promise.all(friendUIDs.map(uid => findUserByUid(uid)));
-  // Filter out any null values and cast to User[]
   return friends.filter(Boolean) as User[];
 }
 
 /**
  * Get pending friend requests for currentUid.
- * Returns only pending requests where the authenticated user is a participant but did not send the request.
+ * Returns only pending requests where the current user did not send the request.
+ * Optimized by using the "participants" array.
  */
 export async function getPendingRequests(currentUid: string) {
   const friendsRef = collection(db, 'friendships');
-  
-  // Query for pending requests where current user is in user1
-  const q1 = query(
+  const q = query(
     friendsRef,
-    where('user1', '==', currentUid),
+    where('participants', 'array-contains', currentUid),
     where('status', '==', 'pending')
   );
-  // Query for pending requests where current user is in user2
-  const q2 = query(
-    friendsRef,
-    where('user2', '==', currentUid),
-    where('status', '==', 'pending')
-  );
-  
-  const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
-  const allDocs = [...snap1.docs, ...snap2.docs];
+  const snap = await getDocs(q);
+  const allDocs = snap.docs;
 
   const requests = await Promise.all(
     allDocs.map(async (doc) => {
       const data = doc.data();
-      // Exclude if the current user is the one who requested (i.e. sent the friend request)
       if (data.requestedBy === currentUid) return null;
-      // Determine the other user's UID.
-      const friendUid = data.user1 === currentUid ? data.user2 : data.user1;
+      const friendUid = data.participants.find((uid: string) => uid !== currentUid);
       const user = await findUserByUid(friendUid);
       return { ...data, user };
     })
