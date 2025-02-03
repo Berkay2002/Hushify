@@ -1,155 +1,133 @@
-import { db } from './firebaseConfig';
-import {
-  doc,
-  setDoc,
-  updateDoc,
-  serverTimestamp,
-  collection,
-  query,
-  where,
-  getDocs,
-  getDoc,
-} from 'firebase/firestore';
-import { findUserByUid } from './users';
-import type { Conversation, User } from '@/lib/interfaces';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  updateDoc, 
+  serverTimestamp, 
+  query, 
+  where, 
+  getDocs, 
+  DocumentData 
+} from "firebase/firestore";
+import { db } from "./firebaseConfig";
+import { User } from "@/lib/interfaces"; 
 
-/**
- * Internal helper:
- * Sort two UIDs so user1 < user2 in lexical order.
- */
-function sortUIDs(uidA: string, uidB: string): [string, string] {
-  return uidA < uidB ? [uidA, uidB] : [uidB, uidA];
-}
-
-/**
- * Send a friend request to another user.
- * Added a "participants" field to enable a single query for friend lists.
- */
-export async function sendFriendRequest(currentUid: string, otherUid: string) {
-  const [user1, user2] = sortUIDs(currentUid, otherUid);
+export const sendFriendRequest = async (currentUid: string, otherUid: string): Promise<void> => {
+  const [user1, user2] = [currentUid, otherUid].sort();
   const docId = `${user1}_${user2}`;
-  const docRef = doc(db, 'friendships', docId);
+  const docRef = doc(db, "friendships", docId);
 
-  await setDoc(
-    docRef,
-    {
-      user1,
-      user2,
-      participants: [user1, user2],
-      status: 'pending',
-      requestedBy: currentUid,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true }
-  );
-}
+  await setDoc(docRef, {
+    user1,
+    user2,
+    participants: [user1, user2],
+    status: "pending",
+    requestedBy: currentUid,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+};
 
-/**
- * Accept a friend request.
- */
-export async function acceptFriendRequest(currentUid: string, otherUid: string) {
-  const [user1, user2] = sortUIDs(currentUid, otherUid);
+export const acceptFriendRequest = async (currentUid: string, otherUid: string): Promise<void> => {
+  const [user1, user2] = [currentUid, otherUid].sort();
   const docId = `${user1}_${user2}`;
-  const docRef = doc(db, 'friendships', docId);
+  const docRef = doc(db, "friendships", docId);
 
   await updateDoc(docRef, {
-    status: 'accepted',
+    status: "accepted",
     updatedAt: serverTimestamp(),
   });
-}
+};
 
-/**
- * Remove or reject a friend request.
- */
-export async function removeFriend(currentUid: string, otherUid: string) {
-  const [user1, user2] = sortUIDs(currentUid, otherUid);
+export const removeFriend = async (currentUid: string, otherUid: string): Promise<void> => {
+  const [user1, user2] = [currentUid, otherUid].sort();
   const docId = `${user1}_${user2}`;
-  const docRef = doc(db, 'friendships', docId);
+  const docRef = doc(db, "friendships", docId);
 
   await updateDoc(docRef, {
-    status: 'removed',
+    status: "removed",
     updatedAt: serverTimestamp(),
   });
-}
+};
 
-/**
- * Query all current "accepted" friends of currentUid.
- * Returns an array of User objects.
- * Optimized query by using the "participants" array field.
- */
-export async function getAcceptedFriends(currentUid: string): Promise<User[]> {
-  const friendsRef = collection(db, 'friendships');
+export const getAcceptedFriends = async (currentUid: string): Promise<User[]> => {
+  const friendsRef = collection(db, "friendships");
   const q = query(
     friendsRef,
-    where('participants', 'array-contains', currentUid),
-    where('status', '==', 'accepted')
+    where("participants", "array-contains", currentUid),
+    where("status", "==", "accepted")
   );
+
   const snap = await getDocs(q);
 
-  const friendUIDs: string[] = [];
-  snap.forEach((doc) => {
-    const data = doc.data();
-    // Identify the friend uid (the one that is not the current user)
-    const friendUid = data.participants.find((uid: string) => uid !== currentUid);
-    if (friendUid) friendUIDs.push(friendUid);
+  interface FriendshipDoc {
+    participants: string[];
+  }
+
+  const friendUIDs: string[] = snap.docs
+    .map((doc) => {
+      const data = doc.data() as FriendshipDoc;
+      return data.participants.find(uid => uid !== currentUid) ?? "";
+    })
+    .filter(uid => uid !== ""); // Removes any undefined values
+
+  if (friendUIDs.length === 0) return [];
+
+  const usersCollection = collection(db, "users");
+  const userDocs: DocumentData[] = [];
+
+  for (let i = 0; i < friendUIDs.length; i += 10) {
+    const batchUIDs = friendUIDs.slice(i, i + 10);
+    const usersQuery = query(usersCollection, where("__name__", "in", batchUIDs));
+    const usersSnap = await getDocs(usersQuery);
+    userDocs.push(...usersSnap.docs);
+  }
+
+  return userDocs.map(doc => {
+    const userData = doc.data() as User;
+    return {
+      id: doc.id, // Ensuring document ID is assigned properly
+      ...userData
+    };
   });
+};
 
-  const friends = await Promise.all(friendUIDs.map(uid => findUserByUid(uid)));
-  return friends.filter(Boolean) as User[];
-}
-
-/**
- * Get pending friend requests for currentUid.
- * Returns only pending requests where the current user did not send the request.
- * Optimized by using the "participants" array.
- */
-export async function getPendingRequests(currentUid: string) {
-  const friendsRef = collection(db, 'friendships');
+export const getPendingRequests = async (currentUid: string): Promise<User[]> => {
+  const friendsRef = collection(db, "friendships");
   const q = query(
     friendsRef,
-    where('participants', 'array-contains', currentUid),
-    where('status', '==', 'pending')
+    where("participants", "array-contains", currentUid),
+    where("status", "==", "pending")
   );
+
   const snap = await getDocs(q);
   const allDocs = snap.docs;
 
-  const requests = await Promise.all(
-    allDocs.map(async (doc) => {
+  const friendUIDs: string[] = allDocs
+    .map((doc) => {
       const data = doc.data();
-      if (data.requestedBy === currentUid) return null;
-      const friendUid = data.participants.find((uid: string) => uid !== currentUid);
-      const user = await findUserByUid(friendUid);
-      return { ...data, user };
+      return data.requestedBy !== currentUid
+        ? data.participants.find((uid: string) => uid !== currentUid) ?? ""
+        : "";
     })
-  );
-  return requests.filter(Boolean);
-}
+    .filter(uid => uid !== ""); // Remove empty values
 
-/**
- * Fetch a single conversation (by conversationId) and augment it with friend data.
- */
-export async function getConversationWithFriendData(
-  conversationId: string,
-  currentUserUid: string
-): Promise<(Conversation & { friend?: User }) | null> {
-  const conversationRef = doc(db, 'conversations', conversationId);
-  const snap = await getDoc(conversationRef);
-  if (!snap.exists()) {
-    return null;
-  }
-  const conversationData = snap.data() as Conversation;
+  if (friendUIDs.length === 0) return [];
 
-  // If not one-on-one, return as is.
-  if (!conversationData.participants || conversationData.participants.length !== 2) {
-    return conversationData;
+  const usersCollection = collection(db, "users");
+  const userDocs: DocumentData[] = [];
+
+  for (let i = 0; i < friendUIDs.length; i += 10) {
+    const batchUIDs = friendUIDs.slice(i, i + 10);
+    const usersQuery = query(usersCollection, where("__name__", "in", batchUIDs));
+    const usersSnap = await getDocs(usersQuery);
+    userDocs.push(...usersSnap.docs);
   }
 
-  const friendUid = conversationData.participants.find((uid) => uid !== currentUserUid);
-  if (!friendUid) {
-    return conversationData;
-  }
+  return userDocs.map(doc => ({
+    id: doc.id,
+    ...(doc.data() as User)
+  }));
+};
 
-  const friend = (await findUserByUid(friendUid)) ?? undefined;
-  return { ...conversationData, friend };
-}
+

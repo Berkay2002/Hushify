@@ -19,11 +19,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex justify-center items-start md:items-center p-8 dark:bg-[#313338]">
+    <div className="min-h-screen flex justify-center items-start md:items-center p-8">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
+          <CardDescription>Sign in to your account with Google</CardDescription>
         </CardHeader>
         <CardFooter>
           <Button onClick={handleGoogleSignIn} className="w-full bg-gray-100 text-black hover:bg-gray-200">

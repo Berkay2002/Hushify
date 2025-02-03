@@ -9,26 +9,31 @@ import {
   query,
   orderBy,
   DocumentData,
+  limit,
+  startAfter,
+  QueryDocumentSnapshot
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 
 // === 🔐 Encryption Setup Using Web Crypto API ===
 
 // Convert ArrayBuffer to Base64
-function bufferToBase64(buffer: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(buffer)));
-}
+const bufferToBase64 = (buffer: ArrayBuffer): string =>
+  btoa(String.fromCharCode(...new Uint8Array(buffer)));
 
 // Convert Base64 to ArrayBuffer
-function base64ToBuffer(base64: string): ArrayBuffer {
-  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)).buffer;
-}
+const base64ToBuffer = (base64: string): ArrayBuffer =>
+  Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)).buffer;
 
-// 🔑 **Using One Secure Key**
-const MASTER_SECRET = "your-secure-master-key"; // Store this securely
+// 🔑 **Using One Secure Key (Consider Storing Securely)**
+const MASTER_SECRET = process.env.NEXT_PUBLIC_MASTER_SECRET;
 
 // 🔹 **Generate Encryption Key using HKDF (Optimized for Speed)**
-export async function getEncryptionKey(): Promise<CryptoKey> {
+let cachedEncryptionKey: CryptoKey | null = null;
+
+export const getEncryptionKey = async (): Promise<CryptoKey> => {
+  if (cachedEncryptionKey) return cachedEncryptionKey;
+
   const encoder = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
@@ -38,7 +43,7 @@ export async function getEncryptionKey(): Promise<CryptoKey> {
     ["deriveKey"]
   );
 
-  return crypto.subtle.deriveKey(
+  cachedEncryptionKey = await crypto.subtle.deriveKey(
     {
       name: "HKDF",
       hash: "SHA-256",
@@ -50,12 +55,17 @@ export async function getEncryptionKey(): Promise<CryptoKey> {
     false,
     ["encrypt", "decrypt"]
   );
-}
+
+  return cachedEncryptionKey;
+};
 
 // 🔹 **Encrypt Message Using AES-256-GCM**
-export async function encryptMessage(plainText: string, key: CryptoKey): Promise<{ cipherText: string; iv: string }> {
+export const encryptMessage = async (
+  plainText: string,
+  key: CryptoKey
+): Promise<{ cipherText: string; iv: string }> => {
   const encoder = new TextEncoder();
-  const iv = crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV for security
+  const iv = crypto.getRandomValues(new Uint8Array(12));
   const encryptedBuffer = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     key,
@@ -65,10 +75,14 @@ export async function encryptMessage(plainText: string, key: CryptoKey): Promise
     cipherText: bufferToBase64(encryptedBuffer),
     iv: bufferToBase64(iv.buffer),
   };
-}
+};
 
 // 🔹 **Decrypt Message Using AES-256-GCM**
-export async function decryptMessage(cipherText: string, ivBase64: string, key: CryptoKey): Promise<string> {
+export const decryptMessage = async (
+  cipherText: string,
+  ivBase64: string,
+  key: CryptoKey
+): Promise<string> => {
   try {
     const decoder = new TextDecoder();
     const iv = new Uint8Array(base64ToBuffer(ivBase64));
@@ -83,27 +97,25 @@ export async function decryptMessage(cipherText: string, ivBase64: string, key: 
     console.error("❌ Decryption failed:", error);
     return "**[Message cannot be decrypted]**";
   }
-}
+};
 
 // === 📩 Firestore Messenger Functions ===
 
-/**
- * Create (or return) a conversation document for these participants.
- */
-export async function createConversation(participants: string[]): Promise<string> {
+export const createConversation = async (participants: string[]): Promise<string> => {
   const convRef = doc(collection(db, "conversations"));
   await setDoc(convRef, {
     participants,
     createdAt: serverTimestamp(),
   });
   return convRef.id;
-}
+};
 
-/**
- * Send a message to a conversation.
- * Encrypts the text before storing.
- */
-export async function sendMessage(conversationId: string, senderId: string, text: string, extraData?: object) {
+export const sendMessage = async (
+  conversationId: string,
+  senderId: string,
+  text: string,
+  extraData?: object
+): Promise<void> => {
   const key = await getEncryptionKey();
   const { cipherText, iv } = await encryptMessage(text, key);
   const messagesRef = collection(db, "conversations", conversationId, "messages");
@@ -113,51 +125,43 @@ export async function sendMessage(conversationId: string, senderId: string, text
     iv,
     senderId,
     createdAt: serverTimestamp(),
-    ...extraData, // e.g., fileUrl, fileName, fileType
+    ...extraData,
   };
 
   await addDoc(messagesRef, messageData);
+};
 
-  // 🔹 **Update conversation's last message (optimized)**
-  await setDoc(
-    doc(db, "conversations", conversationId),
-    { lastMessage: { text: cipherText, iv, senderId, createdAt: serverTimestamp() } },
-    { merge: true }
-  );
-}
-
-/**
- * Subscribe to messages in real-time.
- * Decrypts messages before passing them to the callback.
- * Uses a cached encryption key to avoid re-deriving it on every snapshot update.
- */
-export function subscribeToMessages(conversationId: string, callback: (messages: DocumentData[]) => void) {
+export const subscribeToMessages = (
+  conversationId: string,
+  lastVisibleMessage: QueryDocumentSnapshot<DocumentData> | null,
+  callback: (messages: DocumentData[], lastDoc: QueryDocumentSnapshot<DocumentData> | null) => void
+) => {
   const messagesRef = collection(db, "conversations", conversationId, "messages");
-  const q = query(messagesRef, orderBy("createdAt", "asc"));
-  const keyPromise = getEncryptionKey(); // derive once and reuse
 
-  const unsubscribe = onSnapshot(q, async (snapshot) => {
+  let q = query(messagesRef, orderBy("createdAt", "desc"), limit(20));
+  if (lastVisibleMessage) {
+    q = query(messagesRef, orderBy("createdAt", "desc"), startAfter(lastVisibleMessage), limit(20));
+  }
+
+  const keyPromise = getEncryptionKey();
+
+  return onSnapshot(q, async (snapshot) => {
     const key = await keyPromise;
-    const messages = await Promise.all(
-      snapshot.docs.map(async (doc) => {
-        const data = doc.data();
-        if (data.text && data.iv) {
-          data.text = await decryptMessage(data.text, data.iv, key);
-        }
-        return { id: doc.id, ...data };
-      })
-    );
-    callback(messages);
+    const lastDoc = snapshot.docs[snapshot.docs.length - 1] || null;
+
+    const messages = await Promise.all(snapshot.docs.map(async (doc) => {
+      const data = doc.data();
+      data.text = await decryptMessage(data.text, data.iv, key);
+      return { id: doc.id, ...data };
+    }));
+
+    callback(messages, lastDoc);
   });
+};
 
-  return unsubscribe;
-}
 
-/**
- * Retrieve conversation info (participants, etc.).
- */
-export async function getConversation(conversationId: string) {
+export const getConversation = async (conversationId: string) => {
   const docRef = doc(db, "conversations", conversationId);
   const snap = await getDoc(docRef);
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
-}
+};

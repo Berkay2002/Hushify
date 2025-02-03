@@ -83,7 +83,7 @@ export default function DashboardPage() {
         <h2 className="text-lg font-semibold text-white mb-2">Online Friends</h2>
         <div className="space-y-2">
           {onlineFriends.map((friend) => (
-            <OnlineCard key={friend.uid} user={friend} />
+            <OnlineCard key={friend.uid} user={friend} conversationId={friend.conversationIds?.[0] || ''} />
           ))}
         </div>
       </div>

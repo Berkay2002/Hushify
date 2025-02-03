@@ -19,6 +19,7 @@ export interface User {
   username?: string;
   photoURL?: string; // optional property for profile picture URL
   status?: "online" | "offline"; // added online/offline status
+  conversationIds?: string[]; // added conversationIds property
 }
 
 export interface Conversation {
